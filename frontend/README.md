@@ -67,5 +67,8 @@ Now, every time you git push, your site goes live.
 
 This project uses Firebase and GCP Infrastructure , but please feel free to use your preferred setup.
 
-### Troubleshooting
-- 
+### Troubleshooting Github Actions
+If we want to use a frontend subfolder:
+- Move the .github folder from frontend subfolder to root location, and specify the frontend work location as you can see in the workflows in this repo.
+- Generate the package-lock.json with:
+cd frontend && npm install --package-lock-only 2>&1
