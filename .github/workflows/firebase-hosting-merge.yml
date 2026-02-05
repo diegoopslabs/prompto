@@ -18,3 +18,4 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROMPTO_F6941 }}
           channelId: live
           projectId: prompto-f6941
+          entryPoint: frontend
