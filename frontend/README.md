@@ -67,3 +67,5 @@ Now, every time you git push, your site goes live.
 
 This project uses Firebase and GCP Infrastructure , but please feel free to use your preferred setup.
 
+### Troubleshooting
+- 
