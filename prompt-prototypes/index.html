@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Project Builder - RAG Document Q&A Guide</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Grotesk:wght@300;400;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 255, 0.5), 0 0 40px rgba(138, 43, 226, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(0, 255, 255, 0.8), 0 0 80px rgba(138, 43, 226, 0.5); }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        body {
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(-45deg, #0a0e27, #1a1a2e, #16213e, #0f3460);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 20% 30%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(138, 43, 226, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .header h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 3.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #00ffff, #ff00ff, #00ffff);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 3s ease infinite;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            filter: drop-shadow(0 0 20px rgba(0, 255, 255, 0.5));
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: #b4b4ff;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .phase {
+            background: rgba(20, 25, 45, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 35px;
+            margin-bottom: 40px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            box-shadow:
+                0 8px 32px 0 rgba(0, 0, 0, 0.37),
+                inset 0 0 20px rgba(0, 255, 255, 0.05);
+            animation: slideIn 0.6s ease-out;
+            transition: all 0.3s ease;
+        }
+
+        .phase:hover {
+            border-color: rgba(0, 255, 255, 0.5);
+            box-shadow:
+                0 8px 32px 0 rgba(0, 0, 0, 0.37),
+                inset 0 0 30px rgba(0, 255, 255, 0.1),
+                0 0 40px rgba(0, 255, 255, 0.2);
+        }
+
+        .phase-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid transparent;
+            border-image: linear-gradient(90deg, #00ffff, #ff00ff) 1;
+            padding-bottom: 20px;
+        }
+
+        .phase-number {
+            background: linear-gradient(135deg, #00ffff, #8a2be2);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', monospace;
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-right: 20px;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.6);
+            animation: glow 2s ease-in-out infinite;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .phase-title {
+            flex: 1;
+        }
+
+        .phase-title h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 2rem;
+            color: #00ffff;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        .phase-title p {
+            color: #b4b4ff;
+            font-size: 1rem;
+            font-weight: 300;
+        }
+
+        .prompt-card {
+            background: rgba(10, 15, 35, 0.7);
+            backdrop-filter: blur(5px);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .prompt-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, #00ffff, #ff00ff);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+        }
+
+        .prompt-card:hover {
+            border-color: rgba(138, 43, 226, 0.6);
+            box-shadow: 0 0 30px rgba(138, 43, 226, 0.3);
+            transform: translateX(5px);
+        }
+
+        .prompt-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .prompt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 15px;
+        }
+
+        .prompt-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #00ffff;
+            font-family: 'Orbitron', monospace;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+
+        .copy-btn {
+            background: linear-gradient(135deg, #00ffff, #8a2be2);
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: 'Space Grotesk', sans-serif;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .copy-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.6);
+            background: linear-gradient(135deg, #00ffff, #ff00ff);
+        }
+
+        .copy-btn:active {
+            transform: translateY(0);
+        }
+
+        .copy-btn.copied {
+            background: linear-gradient(135deg, #00ff88, #00ffaa);
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.6);
+        }
+
+        .prompt-text {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.8;
+            color: #e0e0e0;
+            white-space: pre-wrap;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .prompt-description {
+            color: #9f9fff;
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+            font-style: italic;
+            font-weight: 300;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+                letter-spacing: 2px;
+            }
+
+            .phase {
+                padding: 25px;
+            }
+
+            .phase-title h2 {
+                font-size: 1.5rem;
+            }
+
+            .prompt-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .copy-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        const prompts = {
+            phase1: {
+                title: "Project Planning & Requirements",
+                description: "Define your project scope, requirements, and user stories",
+                prompts: [
+                    {
+                        title: "Initial Project Definition",
+                        description: "Start with this prompt to define the core project concept",
+                        text: `I want to build a Document Q&A application using RAG (Retrieval Augmented Generation).
+
+Help me define:
+1. The core problem this application solves
+2. Target users and their needs
+3. Key features and functionality (MVP scope)
+4. Success criteria and constraints
+5. Technical requirements and limitations
+
+Please provide a structured project brief that I can use as a foundation.`
+                    },
+                    {
+                        title: "User Stories & Use Cases",
+                        description: "Generate comprehensive user stories",
+                        text: `Based on a Document Q&A / RAG application, create:
+
+1. Detailed user personas (at least 2-3 different user types)
+2. User stories in the format: "As a [user], I want to [action] so that [benefit]"
+3. User journey maps for key workflows:
+   - Document upload and processing
+   - Asking questions and getting answers
+   - Managing document collections
+4. Edge cases and error scenarios to handle
+
+Focus on both common use cases and important edge cases.`
+                    },
+                    {
+                        title: "Feature Prioritization & Roadmap",
+                        description: "Prioritize features for development phases",
+                        text: `For a Document Q&A RAG application, help me create a feature roadmap:
+
+1. Categorize features into:
+   - Must-have (MVP)
+   - Should-have (Phase 2)
+   - Nice-to-have (Future)
+
+2. Consider these feature areas:
+   - Document ingestion (PDF, DOCX, TXT)
+   - Text chunking and embedding
+   - Vector storage and search
+   - Question answering interface
+   - Citation and source tracking
+   - User authentication
+   - Document management
+   - Multi-document conversations
+
+3. Provide reasoning for prioritization
+4. Estimate complexity (Simple/Medium/Complex) for each feature group`
+                    }
+                ]
+            },
+            phase2: {
+                title: "Architecture & Design",
+                description: "Design system architecture, database schema, and technical components",
+                prompts: [
+                    {
+                        title: "System Architecture Design",
+                        description: "Create the overall system architecture",
+                        text: `Design a complete system architecture for a Document Q&A RAG application including:
+
+1. High-level architecture diagram (describe components and data flow)
+2. Frontend components and structure
+3. Backend services and APIs
+4. Database and vector store selection
+5. LLM integration approach (OpenAI, Anthropic, local models)
+6. Document processing pipeline
+7. Caching strategy
+8. Security considerations
+
+Please provide:
+- Architecture diagram description in text/mermaid format
+- Technology stack recommendations with justifications
+- Data flow for key operations (upload, query, answer generation)
+- Scalability considerations`
+                    },
+                    {
+                        title: "Database & Data Models",
+                        description: "Design database schema and data models",
+                        text: `Design the database schema for a Document Q&A RAG application:
+
+1. Relational database schema for:
+   - Users and authentication
+   - Documents metadata (title, upload date, status, etc.)
+   - Conversation history
+   - User preferences
+
+2. Vector database schema for:
+   - Document chunks/embeddings
+   - Metadata for retrieval
+   - Indexing strategy
+
+3. Define data models with:
+   - Field names and types
+   - Relationships and foreign keys
+   - Indexes for performance
+   - Sample data examples
+
+4. Caching layer design (if needed)
+
+Provide SQL/schema definitions and explain design decisions.`
+                    },
+                    {
+                        title: "API Design & Endpoints",
+                        description: "Define RESTful API structure",
+                        text: `Design a RESTful API for the Document Q&A RAG application:
+
+1. List all API endpoints with:
+   - HTTP method (GET, POST, PUT, DELETE)
+   - Endpoint path
+   - Request body schema
+   - Response schema
+   - Authentication requirements
+   - Error responses
+
+2. Key endpoint categories:
+   - Authentication (/auth/*)
+   - Document management (/documents/*)
+   - Question answering (/query, /ask)
+   - Conversation history (/conversations/*)
+   - User management (/users/*)
+
+3. Include:
+   - Rate limiting strategy
+   - Pagination approach
+   - Versioning strategy
+   - WebSocket endpoints (if real-time features needed)
+
+Provide OpenAPI/Swagger-style documentation.`
+                    },
+                    {
+                        title: "Component Architecture",
+                        description: "Break down frontend and backend components",
+                        text: `Design the component architecture for both frontend and backend:
+
+FRONTEND COMPONENTS:
+1. Page/view components
+2. Reusable UI components
+3. State management approach
+4. Routing structure
+5. Component hierarchy
+
+BACKEND COMPONENTS:
+1. Service layer organization
+2. Document processing pipeline components
+3. RAG chain components (retrieval, generation)
+4. Database access layer
+5. External service integrations
+
+For each component category:
+- List specific components
+- Define responsibilities
+- Identify dependencies
+- Suggest file/folder structure
+
+Include a component dependency diagram description.`
+                    }
+                ]
+            },
+            phase3: {
+                title: "Implementation",
+                description: "Step-by-step prompts for building features",
+                prompts: [
+                    {
+                        title: "Project Setup & Scaffolding",
+                        description: "Initialize the project with proper structure",
+                        text: `Help me set up a Document Q&A RAG application project:
+
+1. Create project structure with:
+   - Frontend (React/Next.js or Vue/Nuxt)
+   - Backend (Python FastAPI/Flask or Node.js Express)
+   - Proper folder organization
+   - Configuration files
+
+2. Set up development environment:
+   - Package.json / requirements.txt
+   - Environment variables (.env template)
+   - Docker setup (optional)
+   - Development vs Production configs
+
+3. Initialize:
+   - Git repository with .gitignore
+   - ESLint/Prettier (frontend)
+   - Linting tools (backend)
+   - Pre-commit hooks
+
+4. Install core dependencies:
+   - Web framework
+   - Database client
+   - Vector DB client (Pinecone/Weaviate/Chroma)
+   - LLM SDK (OpenAI/Anthropic)
+   - Document processing libraries
+
+Provide setup commands and initial file structure.`
+                    },
+                    {
+                        title: "Authentication System",
+                        description: "Implement user authentication",
+                        text: `Implement authentication for the RAG application:
+
+1. Backend authentication:
+   - User registration endpoint with validation
+   - Login with JWT token generation
+   - Password hashing (bcrypt)
+   - Token refresh mechanism
+   - Logout functionality
+   - Protected route middleware
+
+2. Frontend authentication:
+   - Login/Register forms with validation
+   - Token storage (localStorage/cookies)
+   - Authenticated API client setup
+   - Protected routes
+   - Auth state management
+   - Auto-logout on token expiration
+
+3. Security features:
+   - Password strength requirements
+   - Rate limiting on auth endpoints
+   - CSRF protection
+   - Secure cookie settings
+
+Provide complete code implementation for both frontend and backend.`
+                    },
+                    {
+                        title: "Document Upload & Processing",
+                        description: "Build document ingestion pipeline",
+                        text: `Implement the document upload and processing pipeline:
+
+1. File upload endpoint:
+   - Accept PDF, DOCX, TXT files
+   - File size validation
+   - Virus scanning (if needed)
+   - Store in cloud storage or local filesystem
+   - Save metadata to database
+
+2. Document processing service:
+   - Extract text from different file formats
+   - Clean and normalize text
+   - Split into chunks (with overlap strategy)
+   - Generate embeddings for each chunk
+   - Store embeddings in vector database
+   - Update document status
+
+3. Frontend upload interface:
+   - Drag-and-drop file upload
+   - Upload progress indicator
+   - Processing status display
+   - Error handling and retry
+
+4. Background job processing:
+   - Queue system (Celery/Bull)
+   - Job status tracking
+   - Handle failures gracefully
+
+Provide implementation code with error handling and logging.`
+                    },
+                    {
+                        title: "RAG Query System",
+                        description: "Implement the core Q&A functionality",
+                        text: `Build the RAG query system for document Q&A:
+
+1. Query endpoint that:
+   - Accepts user question
+   - Validates input
+   - Generates question embedding
+   - Retrieves relevant chunks from vector DB
+   - Constructs prompt with context
+   - Calls LLM API
+   - Returns answer with citations
+
+2. RAG implementation:
+   - Embedding generation (same model as indexing)
+   - Similarity search (top-k retrieval)
+   - Reranking (optional)
+   - Prompt engineering for accurate answers
+   - Citation extraction from sources
+   - Streaming response (optional)
+
+3. Frontend query interface:
+   - Question input with auto-focus
+   - Loading states
+   - Display answer with formatting
+   - Show source citations with links
+   - Follow-up question suggestions
+
+4. Conversation context:
+   - Maintain chat history
+   - Include previous Q&A in context
+   - Clear conversation option
+
+Provide complete implementation with best practices for RAG.`
+                    },
+                    {
+                        title: "Document Management UI",
+                        description: "Build document library and management features",
+                        text: `Create document management interface:
+
+1. Document list view:
+   - Display all user documents
+   - Show metadata (name, upload date, size, status)
+   - Search and filter functionality
+   - Sorting options
+   - Pagination
+
+2. Document actions:
+   - View document details
+   - Download original file
+   - Delete document (with confirmation)
+   - Reprocess document
+   - Share document (if multi-user)
+
+3. Document detail page:
+   - Full metadata display
+   - Processing status
+   - Preview of document content
+   - Associated Q&A history
+   - Analytics (questions asked, chunks retrieved)
+
+4. Bulk operations:
+   - Select multiple documents
+   - Bulk delete
+   - Bulk reprocess
+   - Export data
+
+Provide React/Vue components with state management and API integration.`
+                    },
+                    {
+                        title: "Error Handling & User Feedback",
+                        description: "Implement comprehensive error handling",
+                        text: `Add robust error handling and user feedback:
+
+1. Backend error handling:
+   - Custom error classes
+   - Validation errors with detailed messages
+   - External API error handling (LLM, Vector DB)
+   - Database error handling
+   - Logging with context
+   - Error monitoring setup (Sentry)
+
+2. Frontend error handling:
+   - API error interceptors
+   - Error boundary components
+   - Toast notifications for errors
+   - Retry mechanisms
+   - Offline detection
+
+3. User feedback:
+   - Loading states for all async operations
+   - Success confirmations
+   - Progress indicators for long operations
+   - Empty states with helpful messages
+   - Validation feedback in forms
+
+4. Edge cases:
+   - Rate limit exceeded
+   - Invalid file formats
+   - LLM API failures
+   - Vector DB unavailable
+   - Session expiration
+
+Provide implementation with examples for common scenarios.`
+                    }
+                ]
+            },
+            phase4: {
+                title: "Testing & Deployment",
+                description: "Test thoroughly and deploy to production",
+                prompts: [
+                    {
+                        title: "Unit & Integration Testing",
+                        description: "Write comprehensive tests",
+                        text: `Create a testing strategy and implement tests:
+
+1. Backend tests:
+   - Unit tests for:
+     * Document processing functions
+     * Embedding generation
+     * RAG retrieval logic
+     * Authentication functions
+   - Integration tests for:
+     * API endpoints
+     * Database operations
+     * External service mocks (LLM, Vector DB)
+   - Test coverage goals (>80%)
+
+2. Frontend tests:
+   - Component tests (React Testing Library/Vue Test Utils)
+   - User interaction tests
+   - Form validation tests
+   - API integration tests with mocks
+   - Accessibility tests
+
+3. E2E tests:
+   - Complete user workflows (Playwright/Cypress)
+   - Document upload to query flow
+   - Authentication flow
+   - Error scenarios
+
+Provide test examples with setup instructions and best practices.`
+                    },
+                    {
+                        title: "Performance Optimization",
+                        description: "Optimize for speed and efficiency",
+                        text: `Optimize the RAG application for performance:
+
+1. Backend optimizations:
+   - Database query optimization with indexes
+   - Caching strategy (Redis):
+     * Embedding cache
+     * LLM response cache
+     * User session cache
+   - Batch processing for embeddings
+   - Connection pooling
+   - Async/await for I/O operations
+
+2. Frontend optimizations:
+   - Code splitting and lazy loading
+   - Image optimization
+   - Bundle size reduction
+   - Memoization in React/Vue
+   - Virtual scrolling for large lists
+   - Service worker for offline support
+
+3. RAG-specific optimizations:
+   - Chunk size optimization
+   - Embedding model selection
+   - Vector search parameter tuning
+   - Prompt optimization for tokens
+   - Streaming responses
+
+4. Monitoring:
+   - Performance metrics
+   - Query response times
+   - Error rates
+   - Resource usage
+
+Provide specific optimization techniques with code examples.`
+                    },
+                    {
+                        title: "CI/CD Pipeline Setup",
+                        description: "Automate testing and deployment",
+                        text: `Set up CI/CD pipeline for automated deployment:
+
+1. GitHub Actions / GitLab CI configuration:
+   - Trigger on push/PR
+   - Run linting
+   - Run all tests
+   - Build application
+   - Security scanning
+   - Deploy to staging/production
+
+2. Environment setup:
+   - Development
+   - Staging
+   - Production
+   - Environment-specific configs
+   - Secrets management
+
+3. Deployment steps:
+   - Build Docker images
+   - Push to container registry
+   - Database migrations
+   - Zero-downtime deployment
+   - Rollback strategy
+
+4. Post-deployment:
+   - Health checks
+   - Smoke tests
+   - Monitoring alerts
+   - Slack/email notifications
+
+Provide complete CI/CD configuration file with all stages.`
+                    },
+                    {
+                        title: "Production Deployment",
+                        description: "Deploy to production infrastructure",
+                        text: `Deploy the RAG application to production:
+
+1. Infrastructure setup:
+   - Choose platform (AWS, GCP, Azure, Vercel, Railway)
+   - Frontend hosting (Vercel, Netlify, S3+CloudFront)
+   - Backend hosting (EC2, Cloud Run, App Service)
+   - Database (RDS, Cloud SQL, managed PostgreSQL)
+   - Vector DB (Pinecone, managed Weaviate, self-hosted)
+   - File storage (S3, Cloud Storage, Blob Storage)
+
+2. Configuration:
+   - Environment variables
+   - CORS settings
+   - Domain and SSL setup
+   - CDN configuration
+   - Load balancing (if needed)
+
+3. Security:
+   - API rate limiting
+   - DDoS protection
+   - Secrets rotation
+   - Regular security updates
+   - Backup strategy
+
+4. Monitoring & observability:
+   - Application monitoring (Datadog, New Relic)
+   - Error tracking (Sentry)
+   - Log aggregation (CloudWatch, LogDNA)
+   - Uptime monitoring
+   - Cost monitoring
+
+Provide deployment checklist and configuration examples.`
+                    },
+                    {
+                        title: "Documentation & Handoff",
+                        description: "Create comprehensive documentation",
+                        text: `Create documentation for the RAG application:
+
+1. User documentation:
+   - Getting started guide
+   - Feature tutorials
+   - FAQs
+   - Troubleshooting guide
+   - Video demos (script)
+
+2. Developer documentation:
+   - README with project overview
+   - Architecture documentation
+   - API documentation (auto-generated + examples)
+   - Database schema documentation
+   - Setup and installation guide
+   - Contributing guidelines
+
+3. Operations documentation:
+   - Deployment procedures
+   - Monitoring and alerting setup
+   - Backup and recovery procedures
+   - Incident response playbook
+   - Scaling guidelines
+
+4. Code documentation:
+   - Inline comments for complex logic
+   - Function/method docstrings
+   - Component prop documentation
+   - Configuration file explanations
+
+Provide documentation templates and examples.`
+                    }
+                ]
+            }
+        };
+
+        function PromptCard({ title, description, text, index }) {
+            const [copied, setCopied] = useState(false);
+
+            const copyToClipboard = () => {
+                navigator.clipboard.writeText(text).then(() => {
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                });
+            };
+
+            return (
+                <div className="prompt-card">
+                    <div className="prompt-header">
+                        <div className="prompt-title">{title}</div>
+                        <button
+                            className={`copy-btn ${copied ? 'copied' : ''}`}
+                            onClick={copyToClipboard}
+                        >
+                            {copied ? '✓ Copied!' : '📋 Copy'}
+                        </button>
+                    </div>
+                    <div className="prompt-description">{description}</div>
+                    <div className="prompt-text">{text}</div>
+                </div>
+            );
+        }
+
+        function Phase({ number, title, description, prompts }) {
+            return (
+                <div className="phase">
+                    <div className="phase-header">
+                        <div className="phase-number">{number}</div>
+                        <div className="phase-title">
+                            <h2>{title}</h2>
+                            <p>{description}</p>
+                        </div>
+                    </div>
+                    {prompts.map((prompt, index) => (
+                        <PromptCard key={index} {...prompt} index={index} />
+                    ))}
+                </div>
+            );
+        }
+
+        function App() {
+            return (
+                <div className="container">
+                    <div className="header">
+                        <h1>🚀 AI Project Builder</h1>
+                        <p>Complete guide with copy-paste prompts to build a Document Q&A RAG Application</p>
+                    </div>
+
+                    <Phase
+                        number="1"
+                        title={prompts.phase1.title}
+                        description={prompts.phase1.description}
+                        prompts={prompts.phase1.prompts}
+                    />
+
+                    <Phase
+                        number="2"
+                        title={prompts.phase2.title}
+                        description={prompts.phase2.description}
+                        prompts={prompts.phase2.prompts}
+                    />
+
+                    <Phase
+                        number="3"
+                        title={prompts.phase3.title}
+                        description={prompts.phase3.description}
+                        prompts={prompts.phase3.prompts}
+                    />
+
+                    <Phase
+                        number="4"
+                        title={prompts.phase4.title}
+                        description={prompts.phase4.description}
+                        prompts={prompts.phase4.prompts}
+                    />
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
