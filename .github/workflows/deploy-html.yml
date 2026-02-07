@@ -1,0 +1,28 @@
+name: Deploy HTML to GCS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'prompt-prototypes/**.html'
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Authenticate to Google Cloud
+              uses: google-github-actions/auth@v2
+              with:
+                credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROMPTO_F6941 }}
+
+            - name: Set up Google Cloud SDK
+              uses: google-github-actions/setup-gcloud@v2
+
+            - name: Upload to GCS
+              run: |
+                gcloud storage cp prompt-prototypes/index.html gs://YOUR_BUCKET_NAME/index.html
+                echo "✅ Deployed index.html to GCS"
